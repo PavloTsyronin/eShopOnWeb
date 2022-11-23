@@ -13,16 +13,22 @@ public class OrderService : IOrderService
 {
     private readonly IRepository<Order> _orderRepository;
     private readonly IUriComposer _uriComposer;
+    private readonly IReservationService _reservationService;
+    private readonly IDeliveryOrderProcessingService _deliveryOrderProcessingService;
     private readonly IRepository<Basket> _basketRepository;
     private readonly IRepository<CatalogItem> _itemRepository;
 
     public OrderService(IRepository<Basket> basketRepository,
         IRepository<CatalogItem> itemRepository,
         IRepository<Order> orderRepository,
-        IUriComposer uriComposer)
+        IUriComposer uriComposer,
+        IReservationService reservationService,
+        IDeliveryOrderProcessingService deliveryOrderProcessingService)
     {
         _orderRepository = orderRepository;
         _uriComposer = uriComposer;
+        _reservationService = reservationService;
+        _deliveryOrderProcessingService = deliveryOrderProcessingService;
         _basketRepository = basketRepository;
         _itemRepository = itemRepository;
     }
@@ -48,6 +54,10 @@ public class OrderService : IOrderService
 
         var order = new Order(basket.BuyerId, shippingAddress, items);
 
+        await _reservationService.ReserveOrder(order);
+
         await _orderRepository.AddAsync(order);
+
+        await _deliveryOrderProcessingService.ProcessDeliveryOrder(order);
     }
 }
